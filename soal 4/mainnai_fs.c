@@ -18,20 +18,20 @@
 #define AES_KEY_SIZE 32
 #define AES_IV_SIZE 16
 
-// Struktur konfigurasi
+
 struct {
     const char *rootdir;
     const char *mountdir;
 } maimai_config;
 
-// Fungsi bantuan untuk path
+
 char* build_path(const char *path) {
     char *fullpath = malloc(strlen(maimai_config.rootdir) + strlen(path) + 1);
     sprintf(fullpath, "%s%s", maimai_config.rootdir, path);
     return fullpath;
 }
 
-// Fungsi untuk Starter Chiho (a)
+
 char* starter_transform_path(const char *path, int add_mai) {
     if (strstr(path, "/starter/") != path) return NULL;
     
@@ -47,7 +47,7 @@ char* starter_transform_path(const char *path, int add_mai) {
     return newpath;
 }
 
-// Fungsi untuk Metropolis Chiho (b)
+
 char* metro_transform_path(const char *path) {
     if (strstr(path, "/metro/") != path) return NULL;
     
@@ -65,7 +65,6 @@ void metro_transform_content(char *content, size_t size) {
     }
 }
 
-// Fungsi untuk Dragon Chiho (c) - ROT13
 void dragon_rot13(char *str, size_t len) {
     for (size_t i = 0; i < len; i++) {
         if ((str[i] >= 'a' && str[i] <= 'm') || (str[i] >= 'A' && str[i] <= 'M')) {
@@ -76,7 +75,7 @@ void dragon_rot13(char *str, size_t len) {
     }
 }
 
-// Fungsi untuk Black Rose Chiho (d) - Tidak ada transformasi
+
 char* blackrose_transform_path(const char *path) {
     if (strstr(path, "/blackrose/") != path) return NULL;
     
@@ -88,7 +87,6 @@ char* blackrose_transform_path(const char *path) {
     return newpath;
 }
 
-// Fungsi untuk Heaven Chiho (e) - AES-256-CBC
 void heaven_encrypt(const char *in, size_t in_len, char *out, unsigned char *iv) {
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
     unsigned char key[AES_KEY_SIZE];
@@ -113,7 +111,7 @@ void heaven_decrypt(const char *in, size_t in_len, char *out, unsigned char *iv)
     EVP_CIPHER_CTX_free(ctx);
 }
 
-// Fungsi untuk Youth Chiho (f) - Gzip compression
+
 int youth_compress(const char *in, size_t in_len, char *out, size_t out_len) {
     z_stream strm;
     strm.zalloc = Z_NULL;
@@ -164,7 +162,7 @@ int youth_decompress(const char *in, size_t in_len, char *out, size_t out_len) {
     return decompressed_size;
 }
 
-// Fungsi untuk 7sRef Chiho (g)
+
 char* sevsref_transform_path(const char *path) {
     if (strstr(path, "/7sref/") != path) return NULL;
     
@@ -186,7 +184,6 @@ char* sevsref_transform_path(const char *path) {
     return newpath;
 }
 
-// Implementasi operasi FUSE
 static int maimai_getattr(const char *path, struct stat *stbuf,
                          struct fuse_file_info *fi) {
     (void) fi;
@@ -295,7 +292,7 @@ static int maimai_read(const char *path, char *buf, size_t size, off_t offset,
     
     close(fd);
     
-    // Transformasi konten berdasarkan area
+
     if (res > 0) {
         if (strstr(path, "/metro/") == path) {
             metro_transform_content(buf, res);
@@ -348,8 +345,7 @@ static int maimai_write(const char *path, const char *buf, size_t size,
         free(fullpath);
         return -errno;
     }
-    
-    // Transformasi konten sebelum menulis
+
     if (strstr(path, "/heaven/") == path) {
         unsigned char iv[AES_IV_SIZE];
         RAND_bytes(iv, AES_IV_SIZE);
@@ -450,7 +446,7 @@ int main(int argc, char *argv[]) {
     maimai_config.rootdir = realpath(argv[1], NULL);
     maimai_config.mountdir = argv[2];
     
-    // Pindahkan rootdir dan mountdir ke akhir argumen untuk FUSE
+
     argv[1] = argv[2];
     argv[2] = NULL;
     argc = 2;
