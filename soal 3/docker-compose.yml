@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  antink-server:
+    build: .
+    container_name: antink-server
+    privileged: true
+    volumes:
+      - ./it24_host:/it24_host:rw
+      - ./antink_mount:/antink_mount:rw
+      - ./antink_logs:/var/log:rw
+
+  antink-logger:
+    image: ubuntu:22.04
+    container_name: antink-logger
+    depends_on:
+      antink-server:
+        condition: service_started
+    volumes:
+      - ./antink_logs:/var/log:rw
+    command: ["sh", "-c", "tail -f /var/log/it24.log"]
