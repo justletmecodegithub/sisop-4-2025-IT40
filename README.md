@@ -419,3 +419,26 @@ int main(int argc, char *argv[]) {
     return fuse_main(args.argc, args.argv, &xmp_oper, NULL);
 }
 ```
+
+## Beberapa Masalah yang terjadi
+
+![Image](https://github.com/user-attachments/assets/9b730811-3528-4a3e-8237-55619e0af610)
+
+
+![Image](https://github.com/user-attachments/assets/93c72c99-382f-4001-8e85-b5f3742bd184)
+
+
+![Image](https://github.com/user-attachments/assets/8bcf6867-1823-454d-9ddf-364811a7b8d5)
+
+
+![Image](https://github.com/user-attachments/assets/31523f7e-bba1-4d13-ad04-5ab851cdc2db)
+
+
+![Image](https://github.com/user-attachments/assets/3fcdf078-9389-47e1-ad6e-1a0940e5d025)
+
+
+![Image](https://github.com/user-attachments/assets/b70ee5e7-a890-4ee4-918b-e7a9719de894)
+
+
+## Revisi
+#### Copy belum tercatat pada activity.log
