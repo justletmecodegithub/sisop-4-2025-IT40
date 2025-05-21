@@ -37,8 +37,8 @@ Tugas utama kita dalam kode ini adalah
 ### Fungsi dari activity.log
 ```c
 void log_activity(const char *action, const char *details) {
-    time_t now = time(NULL);
-    struct tm *tm_info = localtime(&now);
+    time_t now = time(NULL); 
+    struct tm *tm_info = localtime(&now); 
     char timestamp[20];
     strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", tm_info);
 
@@ -49,6 +49,9 @@ void log_activity(const char *action, const char *details) {
     }
 }
 ```
+- `time_t now = time(NULL); ` : mengambil waktu sekarang dalam bentuk timestamp.
+- ` struct tm *tm_info = localtime(&now); `: Mengubah timestamp now menjadi struktur waktu lokal.
+- `strftime` : mengubah tm_info menjadi string waktu berdasarkan format yang diberikan
 
 ### Menentukan rormat nama file yang sesuai
 ```c
@@ -58,6 +61,8 @@ static int is_fragment_file(const char *f) {
            isdigit(dot[1]) && isdigit(dot[2]) && isdigit(dot[3]);
 }
 ```
+- `strrchr(f, '.')`: mencari kemunculan titik (.) terakhir dalam string f.
+- `isdigit` : menentukan jumlah karakter setelah titik.
 
 ### Menyalin bagian nama file asli (tanpa format .###) ke variabel base
 ```c
@@ -71,7 +76,9 @@ static int get_base_filename(const char *frag, char *base) {
     return 0;
 }
 ```
-
+- `const char *dot = strrchr(frag, '.');` : menemukan titik terakhir darri frag.
+- `size_t len = dot - frag;` : menghitung panjang bagian nama sebelum titik.
+  
 ### Menghitung jumlah file pecahan yang ada untuk file tertentu
 ```c
 static int count_file_parts(const char *base_filename) {
@@ -85,6 +92,8 @@ static int count_file_parts(const char *base_filename) {
     return count;
 }
 ```
+- `snprintf` : menghasilkan path file sesui dengan format.
+- `if (access(path, F_OK) != 0) break;` : mengecek apakah file ada.
 
 ### Menghitung total ukuran dari seluruh file pecahan
 ```c
@@ -100,17 +109,21 @@ static int get_file_size(const char *base_filename) {
     return total_size;
 }
 ```
+- `struct stat st;` : struktur untuk menyimpan informasi file dari stat() seperti ukuran file, waktu modifikasi, dll.
+- ` for (int i = 0; ; i++)` : loop untuk mencari fragmen.
+- ` total_size += st.st_size;` : menambahkan ukuran file saat ini ke total dan ukuran total file akan dikembalikan dengan `  return total_size;`.
 
 ### Mengambil atribut dari sebuah file atau direktori
 ```c
 static int xmp_getattr(const char *path, struct stat *stbuf, struct fuse_file_info *fi) {
     (void) fi;
     memset(stbuf, 0, sizeof(struct stat));
-    if (strcmp(path, "/") == 0) {
+    if (strcmp(path, "/") == 0) { // mengecek apakah path adalah direktori root
         stbuf->st_mode = S_IFDIR | 0755;
         stbuf->st_nlink = 2;
         return 0;
     }
+    //jika bukan root
     char base_filename[MAX_FILENAME_LEN + 1];
     strncpy(base_filename, path + 1, MAX_FILENAME_LEN);
     base_filename[MAX_FILENAME_LEN] = '\0';
@@ -118,7 +131,7 @@ static int xmp_getattr(const char *path, struct stat *stbuf, struct fuse_file_in
     snprintf(first_part, sizeof(first_part), "%s/%s.000", RELIC_DIR, base_filename);
     if (access(first_part, F_OK) == 0) {
         stbuf->st_mode = S_IFREG | 0644;
-        stbuf->st_nlink = 1;
+        stbuf->st_nlink = 1; // jumlah hard link 1 karena virtual
         stbuf->st_size = get_file_size(base_filename);
         return 0;
     }
@@ -139,6 +152,7 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
     if (strcmp(path, "/") != 0)
         return -ENOENT;
 
+    // Isi entri khusus . (current dir) dan .. (parent dir) ke buffer FUSE.
     filler(buf, ".", NULL, 0, 0);
     filler(buf, "..", NULL, 0, 0);
 
@@ -158,7 +172,7 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
         char base[MAX_FILENAME_LEN];
         if (get_base_filename(de->d_name, base) != 0) continue;
 
-        int duplicate = 0;
+        int duplicate = 0; 
         for (int i = 0; i < listed_count; i++) {
             if (strcmp(listed[i], base) == 0) {
                 duplicate = 1;
@@ -442,3 +456,5 @@ int main(int argc, char *argv[]) {
 
 ## Revisi
 #### Copy belum tercatat pada activity.log
+![Image](https://github.com/user-attachments/assets/d1991d9f-3bed-49f8-9982-3369a10b9fa9)
+Mohon maaf mas/mba untuk revisi saya hanya mendapatkan hasil seperti ini dan belum mendapatkan format yang sesuai. 
