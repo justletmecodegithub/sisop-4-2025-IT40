@@ -475,4 +475,4 @@ int main(int argc, char *argv[]) {
 ## Revisi
 #### Copy belum tercatat pada activity.log
 ![Image](https://github.com/user-attachments/assets/d1991d9f-3bed-49f8-9982-3369a10b9fa9)
-Mohon maaf mas/mba untuk revisi saya hanya mendapatkan hasil seperti ini dan belum mendapatkan format yang sesuai. 
+Mohon maaf mas/mba untuk revisi saya hanya mendapatkan hasil seperti ini dan belum mendapatkan format yang sesuai. Saya juga cukup bingung terkait proses copy ini dan menentukan format copy yang menyertakan direktori tujuan dari file yang kita copy. 
