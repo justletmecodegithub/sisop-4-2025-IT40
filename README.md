@@ -166,7 +166,7 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
     char listed[MAX_FILENAME_LEN][MAX_FILENAME_LEN];
     int listed_count = 0;
 
-    while ((de = readdir(dp)) != NULL) {
+    while ((de = readdir(dp)) != NULL) { // loop semua entri di direktori relics
         if (!is_fragment_file(de->d_name)) continue;
 
         char base[MAX_FILENAME_LEN];
@@ -200,14 +200,15 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 ```c
 static int xmp_open(const char *path, struct fuse_file_info *fi) {
     char base_filename[MAX_FILENAME_LEN + 1];
-    strncpy(base_filename, path + 1, MAX_FILENAME_LEN);
+    strncpy(base_filename, path + 1, MAX_FILENAME_LEN); // mwnyalin nama file dari path
     base_filename[MAX_FILENAME_LEN] = '\0';
     char first_part[MAX_PATH_LEN];
-    snprintf(first_part, sizeof(first_part), "%s/%s.000", RELIC_DIR, base_filename);
-    if (access(first_part, F_OK) != 0) return -ENOENT;
+    snprintf(first_part, sizeof(first_part), "%s/%s.000", RELIC_DIR, base_filename); // menyusun path lengkap ke file fragmen pertama
+    if (access(first_part, F_OK) != 0) return -ENOENT; // mengecek apakah file fragmen ada
     return 0;
 }
 ```
+- `path + 1` : ambil string mulai dari indeks ke-1 (lewat`/`)
 
 ### Membaca dan menggabungkan file virtual
 ```c
@@ -224,7 +225,8 @@ static int xmp_read(const char *path, char *buf, size_t size,
     int part_num = 0;
     off_t cur_offset = 0;
 
-    while (total_read < size) {
+    // loop membaca file pecahan sampai jumlah byte yang diminta (size) terpenuhi
+    while (total_read < size) { 
         char part_path[MAX_PATH_LEN];
         snprintf(part_path, sizeof(part_path),
                 "%s/%s.%03d", RELIC_DIR, base_filename, part_num);
@@ -232,6 +234,7 @@ static int xmp_read(const char *path, char *buf, size_t size,
         FILE *fp = fopen(part_path, "rb");
         if (!fp) break;
 
+        // menghitunng ukuran file pecahan
         fseek(fp, 0, SEEK_END);
         size_t part_size = ftell(fp);
         rewind(fp);
@@ -243,10 +246,12 @@ static int xmp_read(const char *path, char *buf, size_t size,
             continue;
         }
 
+        // menghitung posisi awal dalam pecahan yang perlu di baca
         off_t read_off = (offset > cur_offset) ? 
                         (offset - cur_offset) : 0;
-        size_t remain = part_size - read_off;
-        size_t to_read = (remain < (size - total_read)) ? 
+
+        size_t remain = part_size - read_off; // banyak bite yang tersisa
+        size_t to_read = (remain < (size - total_read)) ?  // jumlaah byte yang akan dibaca
                         remain : (size - total_read);
 
         fseek(fp, read_off, SEEK_SET);
@@ -255,6 +260,7 @@ static int xmp_read(const char *path, char *buf, size_t size,
 
         if (n == 0) break;
 
+        // memperbaharui status pembacaan
         total_read += n;
         offset += n;
         part_num++;
@@ -273,7 +279,7 @@ static int xmp_create(const char *path, mode_t mode, struct fuse_file_info *fi) 
     strncpy(base, path + 1, MAX_FILENAME_LEN);
     base[MAX_FILENAME_LEN] = '\0';
 
-    mkdir(RELIC_DIR, 0755);
+    mkdir(RELIC_DIR, 0755); // membuat folder relic jika belum ada dan permissionnya
 
     char part_path[MAX_PATH_LEN];
     snprintf(part_path, sizeof(part_path), "%s/%s.000", RELIC_DIR, base);
@@ -283,6 +289,7 @@ static int xmp_create(const char *path, mode_t mode, struct fuse_file_info *fi) 
         return -EEXIST;
     }
 
+    // membuka atau membuat file .000 untuk di tulis
     int fd = open(part_path, O_WRONLY | O_CREAT | O_TRUNC, mode);
     if (fd == -1) return -errno;
     close(fd);
@@ -293,6 +300,8 @@ static int xmp_create(const char *path, mode_t mode, struct fuse_file_info *fi) 
     return 0;
 }
 ```
+- `O_CREAT` : buat file jika belum ada.
+- `O_TRUNC` : kosongkan file jika sudah ada
 
 ### Penulisan data ke file 
 ```c
@@ -301,19 +310,20 @@ static int xmp_write(const char *path, const char *buf, size_t size, off_t offse
     strncpy(base_filename, path + 1, MAX_FILENAME_LEN);
     base_filename[MAX_FILENAME_LEN] = '\0';
 
-    size_t total_written = 0;
+    size_t total_written = 0; // jumlah byte yang berhasil di tulis
     int part_num = offset / MAX_PART_SIZE;
     size_t part_offset = offset % MAX_PART_SIZE;
 
-    char log_msg[MAX_LOG_LEN] = "";
-    char part_info[MAX_FILENAME_LEN + 8];
-    int log_full = 0;
+    char log_msg[MAX_LOG_LEN] = ""; // buffer untuk isi log
+    char part_info[MAX_FILENAME_LEN + 8]; // menyimpan nama fragmen
+    int log_full = 0; // flag log jika terlalu panjang
 
     while (size > 0) {
         char part_path[MAX_PATH_LEN];
         snprintf(part_path, sizeof(part_path), "%s/%s.%03d", RELIC_DIR, base_filename, part_num);
 
-        struct stat st = {0};
+        //memastikan direktori relics ada
+        struct stat st = {0}; 
         if (stat(RELIC_DIR, &st) == -1) {
             mkdir(RELIC_DIR, 0755);
         }
@@ -329,13 +339,13 @@ static int xmp_write(const char *path, const char *buf, size_t size, off_t offse
 
         fseek(fp, part_offset, SEEK_SET);
 
-        size_t to_write = (size > MAX_PART_SIZE - part_offset) ? (MAX_PART_SIZE - part_offset) : size;
+        size_t to_write = (size > MAX_PART_SIZE - part_offset) ? (MAX_PART_SIZE - part_offset) : size; // hitung berapa byte yang bisa ditulis ke fragmen
         size_t bytes_written = fwrite(buf, 1, to_write, fp);
         fclose(fp);
 
         if (bytes_written <= 0) break;
 
-        snprintf(part_info, sizeof(part_info), "%s.%03d", base_filename, part_num);
+        snprintf(part_info, sizeof(part_info), "%s.%03d", base_filename, part_num); // format nama frragmen
 
 
         if (log_full == 0) {
@@ -349,6 +359,7 @@ static int xmp_write(const char *path, const char *buf, size_t size, off_t offse
             }
         }
 
+        // update variabel untuk iterasi berikutnya
         buf += bytes_written;
         size -= bytes_written;
         total_written += bytes_written;
@@ -359,6 +370,7 @@ static int xmp_write(const char *path, const char *buf, size_t size, off_t offse
     if (total_written > 0) {
         char full_log_msg[MAX_LOG_LEN];
 
+        // format log
         if (strlen(base_filename) + 4 < sizeof(full_log_msg)) {
             strncpy(full_log_msg, base_filename, sizeof(full_log_msg) - 1);
             strncat(full_log_msg, " -> ", sizeof(full_log_msg) - strlen(full_log_msg) - 1);
@@ -387,17 +399,22 @@ static int xmp_unlink(const char *path) {
     base_filename[MAX_FILENAME_LEN] = '\0';
     int last_part = count_file_parts(base_filename) - 1;
     if (last_part < 0) return -ENOENT;
+
+    // loop dari awal sampe fragmen terakhir
     for (int i = 0; i <= last_part; i++) {
         char part_path[MAX_PATH_LEN];
         snprintf(part_path, sizeof(part_path), "%s/%s.%03d", RELIC_DIR, base_filename, i);
-        unlink(part_path);
+        unlink(part_path); // hapus file dengan unlink()
     }
+
+    // catat ke log
     char log_msg[MAX_LOG_LEN];
     snprintf(log_msg, sizeof(log_msg), "%s.000 - %s.%03d", base_filename, base_filename, last_part);
     log_activity("DELETE", log_msg);
     return 0;
 }
 ```
+- `count_file_parts(` : mengetahui jumlah fragmen.
 
 ### Struktur utama untuk semua operasi FUSE yang kita buat
 ```c
@@ -414,19 +431,20 @@ static struct fuse_operations xmp_oper = {
 ### Fungsi utama pada kode ini
 ```c
 int main(int argc, char *argv[]) {
-    umask(0);
+    umask(0); // menonaktifkan file permission mask
 
     struct fuse_args args = FUSE_ARGS_INIT(0, NULL); 
 
     fuse_opt_add_arg(&args, argv[0]);
 
-    if (argc > 1)
+    if (argc > 1) // mengecek apakah ada mountpoint yang diberikan
         fuse_opt_add_arg(&args, argv[1]);
     else {
         fprintf(stderr, "Usage: %s <mountpoint>\n", argv[0]);
         return 1;
     }
 
+    // mengatur jumlah maksimum thread idle = 16
     fuse_opt_add_arg(&args, "-o");
     fuse_opt_add_arg(&args, "max_idle_threads=16");
 
