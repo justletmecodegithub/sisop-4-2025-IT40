@@ -2,6 +2,7 @@ Soal Nomer 1
 Dikerjakan oleh 5027241024 -
 
 ## **Header & Definisi**
+
 ```c
 #define FUSE_USE_VERSION 31
 #include <fuse3/fuse.h>
@@ -19,6 +20,7 @@ FUSE library untuk membuat filesystem virtual
 Define konstanta untuk ID Google Drive, nama file, dan direktori
 
 ## Fungsi Utilitas
+
 ```c
 void run_shell(const char *cmd) {
     printf("[shell] %s\n", cmd);
