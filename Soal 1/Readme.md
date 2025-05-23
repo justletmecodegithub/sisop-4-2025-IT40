@@ -160,5 +160,6 @@ Catatan Penting
 Wajib install fuse3 dan libfuse3-dev
 
 File zip otomatis terhapus setelah diunzip
+![image](https://github.com/user-attachments/assets/0051d079-68db-476d-84f5-e8f585628fbc)
 
 Hasil gambar bisa diakses via folder mount atau image
